@@ -1,214 +1,138 @@
-# Task Tracker (TodoApp)
-
 """
-- Program Name: Task Tracker
-- Description: A simple command-line task tracker that allows users to add, view, update, delete, and mark tasks as complete.
-"""
+# Taskify (Task Tracker) 😎
 
-"""
-1. Program Need Run in Terminal
-2. Program Need use Arguments
-3. Read And Wirte Json File
-4. If Json File Not Exist, Create New One
+# python taskify.py [command] [subcommand] (text)
 
-_ command line arguments:
-- add -> Add a new task
-- update -> Update an existing task
-- delete -> Delete a task
-- mark -> Mark a task as complete (done, in-progres, todo)
-- list -> List all tasks
-- help -> Show help message
-- clear -> Delete all tasks
+# commands:
+# add (text)
+# list
+# update 1 (text)
+# delete 2
 """
 
-import json
-import os
-from rich.console import Console
-from rich.table import Table
-import time
+# color: colorma
+# table: tabulate
+
+# Start APP
 import sys
-from enum import Enum
+from colorama import Fore, Back, Style
+import json
+from datetime import datetime as dt
+import os
+
+
+# Good Thing TODO
+# TODO: make own file structrue saver
+
+# Enum Status
+# class Status(Enum):
+#     TODO = "todo"
+#     DONE = "done"
+#     IN_PROGRESS = "in-progress"
+
+
+# const - Global
+TODO = "todo"
+DONE = "done"
+IN_PROGRESS = "in-progress"
 
 FILENAME = "tasks.json"
 
 
-class task_status(Enum):
-    """
-    Enum class to difine task status. todo, in-progress, done
-    """
-
-    TODO = "TODO"
-    IN_PROGRESS = "IN_PROGRESS"
-    DONE = "DONE"
+def get_time_now():
+    """Function Return date and time current as string"""
+    return dt.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-# config
-console = Console()
-
-
-# JSON HANDLER
-def json_create_file(filename=FILENAME):
-    """
-    this is for create json file def
-    """
-
-    with open(filename, "w") as file:
-        json.dump([], file)
-        console.print(f"\n[green bold]New task file created: {filename}\n")
-
-
-def json_write_file(task_list, filename=FILENAME):
-    """
-    This function to write the task list to a JSON file
-    """
-
-    with open(filename, "w") as file:
-        json.dump(task_list, file)
-        console.print(f"\n[green bold]Task saved to {filename}\n")
-
-
-def json_read_file(filename=FILENAME):
-    """
-    this funciton to read the task list from a Json File
-    """
-
+def where_is_it(filename=FILENAME):
     if not os.path.exists(filename):
-        console.print(f"\n[yellow bold]No tasks found. Creating new file {filename}\n")
-        json_create_file()
-        return []
+        return 0
 
     with open(filename, "r") as file:
-        task_list_read = json.load(file)
-        console.print(f"\n[green bold]Tasks loaded from {filename}\n")
-        return task_list_read
+        tasks = json.load(file)
+    return len(tasks)
 
 
-# JSON HANDLER
+def save_changes(task, filename=FILENAME):
+    tasks = []
+    if os.path.exists(filename):
+        with open(filename, "r") as file:
+            tasks = json.load(file)
+    else:
+        with open(filename, "w") as file:
+            file.write("[]")
+
+    # append
+    tasks.append(task)
+
+    # the result is a JSON string:
+    with open(filename, "w") as file:
+        json.dump(tasks, file)
 
 
-def taskify(task_list):
-    """
-    Main Funciuton to run the task tracker application.
-    """
-
-    # Check if command line argumant are provoded
+def main():
+    # check argumanet is avalable
     if len(sys.argv) > 1:
-        # If arguments are provided, manage them
-        manage_arguments(argument=sys.argv, task_list=task_list)
-        return
-
-
-def manage_arguments(argument, task_list):
-    """
-    Function to manage command line arguments for the task tracker.
-    """
-
-    match argument[1].lower():
-        case "add":
-            currnet_task = add_task(
-                task_list, argument[2] if len(argument) > 2 else None
-            )
-            show_tasks([currnet_task])
-        case "list":
-            show_tasks(task_list)
-        case "update":
-            pass
-        case "delete":
-            pass
-        case "mark-done":
-            pass
-        case "mark-in-progress":
-            pass
-        case "help":
-            pass
-        case "clear":
-            pass
-        case _:
-            console.print(
-                f"\n[yellow bold]Invalid argument. Use 'help' to see available commands.\n"
-            )
-
-
-def get_time_now():
-    """
-    Function get the current time and date.
-    """
-    return time.strftime("%Y-%m-%d %H:%M:%S")
-
-
-# add task
-def add_task(task_list, task=None):
-    """
-    Function to add a new task to the task list.
-    """
-
-    # TODO read from json file for get len
-    task_id = len(task_list)
-
-    try:
-        if task:
-            new_task = {
-                "id": task_id,
-                "description": task,
-                "status": task_status.TODO.value,
-                "created_at": get_time_now(),
-                "updated_at": get_time_now(),
-            }
-
-            task_list.append(new_task)
-            json_write_file(task_list)
-
-            return new_task
-
-        else:
-            console.print(f"\n[yellow bold]Invalid Input task cannot be empty\n")
-
-    except Exception as e:
-        raise Exception(f"\n Error adding task: {e}")
-
-
-def show_tasks(task_list):
-    """
-    Function to list all taks in the task list. and display to user
-    """
-
-    if not task_list:
-        console.print(f"\n[red bold]No tasks available.\n")
-        return
-
-    # Create a Table instance for displaying tasks
-    table = Table(title="Task Tracker", show_lines=True)
-    # Create a table to display tasks
-    table.add_column("ID", justify="left", style="red", no_wrap=True)
-    table.add_column("Description", justify="left", style="blue", no_wrap=False)
-    table.add_column("Status", justify="left", style="cyan")
-    table.add_column("Created At", justify="left", style="#f0932b")
-    table.add_column("Updated At", justify="left", style="yellow")
-
-    for task in task_list:
-        table.add_row(
-            str(task["id"] + 1),
-            task["description"],
-            task["status"],
-            task["created_at"],
-            task["updated_at"],
+        manage_arg(sys.argv)
+    else:
+        print(
+            Fore.RED
+            + Style.BRIGHT
+            + "Please Enter a Argument when you run a application"
         )
+        exit(1)
 
-    console.print(table)
-    del table
+
+def manage_arg(arguments):
+    # command
+    arg = arguments[1].lower()
+
+    if arg in ["add", "a"]:
+        add_task(arguments[2])
+    elif arg in ["del", "delete", "remove"]:
+        delete_task()
+    elif arg in ["update", "edit"]:
+        update_task()
+    elif arg in ["show", "list", "table"]:
+        list_task()
+    else:
+        print(Fore.YELLOW + Style.BRIGHT + "Invalid Command.")
+
+
+def add_task(text):
+    # text
+    # text append list
+    # save_changes()
+    # show table
+    new_task = {
+        # id
+        # title
+        # status
+        # creadted_at
+        # updated_at
+        "id": where_is_it(),
+        "title": text,
+        "status": TODO,
+        "created_at": get_time_now(),
+        "updated_at": get_time_now(),
+    }
+
+    save_changes(new_task)
+
+    # show list : TODO
+
+
+def delete_task():
+    pass
+
+
+def update_task():
+    pass
+
+
+def list_task():
+    pass
 
 
 if __name__ == "__main__":
-    """
-    Entry point of the application.
-    It runs the task tracker function to start the application.
-    """
-
-    # Clear Console before starting
-    os.system("clear")
-
-    # Load Json File
-    task_list = json_read_file()
-
-    # application
-    taskify(task_list)
+    main()
