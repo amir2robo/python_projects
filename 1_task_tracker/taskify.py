@@ -1,5 +1,5 @@
 """
-# Taskify (Task Tracker) 😎
+# Taskify (Task Tracker) 😎 (DONE✅)
 
 # python taskify.py [command] [subcommand] (text)
 
@@ -8,6 +8,8 @@
 # list
 # update 1 (text)
 # delete 2
+# mark-done 3
+# mark-in-progress 2
 """
 
 # color: colorama
@@ -67,21 +69,41 @@ def read_all_tasks(filename=FILENAME):
             file.write("[]")
 
 
+def write_tasks(tasks, filename=FILENAME):
+    with open(filename, "w") as file:
+        json.dump(tasks, file)
+
+
+def update_title_by_index(index, new_title, filename=FILENAME):
+    tasks = read_all_tasks() or []
+
+    # update
+    tasks[index]["title"] = new_title
+    tasks[index]["updated_at"] = get_time_now()
+
+    # the result is a JSON string:
+    write_tasks(tasks)
+
+
+#
+def delete_task_by_id(index, filename=FILENAME):
+    tasks = read_all_tasks() or []
+
+    # append
+    tasks.pop(index)
+
+    # the result is a JSON string:
+    write_tasks(tasks)
+
+
 def save_changes(task, filename=FILENAME):
-    tasks = []
-    if os.path.exists(filename):
-        with open(filename, "r") as file:
-            tasks = json.load(file)
-    else:
-        with open(filename, "w") as file:
-            file.write("[]")
+    tasks = read_all_tasks() or []
 
     # append
     tasks.append(task)
 
     # the result is a JSON string:
-    with open(filename, "w") as file:
-        json.dump(tasks, file)
+    write_tasks(tasks)
 
 
 def main():
@@ -100,6 +122,7 @@ def main():
 def manage_arg(arguments):
     # command
     arg = arguments[1].lower()
+    os.system("clear")
 
     # Add Task
     if arg in ["add", "a"]:
@@ -113,22 +136,46 @@ def manage_arg(arguments):
         list_task(temp_list)
         del temp_list
 
+    # Delete Task
     elif arg in ["del", "delete", "remove"]:
-        delete_task()
+        delete_task(arguments[2])
+
+    # Update or Edit
     elif arg in ["update", "edit"]:
-        update_task()
+        update_task(arguments[2], arguments[3])
 
     # Show Table
     elif arg in ["show", "list", "table"]:
-        os.system("clear")
         list_task(read_all_tasks())
 
     # clear Tasks
     elif arg in ["clear", "clean"]:
         clear_list()
 
+    elif arg in ["mark-done", "done"]:
+        mark_task(arguments[2], DONE)
+
+    elif arg in ["mark-in-progress", "in-progress", "doing"]:
+        mark_task(arguments[2], IN_PROGRESS)
+
     else:
         print(Fore.YELLOW + Style.BRIGHT + "Invalid Command.")
+
+
+def mark_task(index, status):
+    """Function change status"""
+    tasks = read_all_tasks() or []
+
+    # change status
+    real_index = int(index) - 1
+    tasks[real_index]["status"] = status
+
+    write_tasks(tasks)
+
+    # show table
+    list_task(tasks)
+
+    print(Fore.GREEN + Back.WHITE + Style.BRIGHT + f"\n task {index}: {status}")
 
 
 def add_task(text):
@@ -156,12 +203,33 @@ def add_task(text):
     # show list : TODO
 
 
-def delete_task():
-    pass
+def delete_task(index):
+    """Function to delete task by id index"""
+    # real index
+    real_index = int(index) - 1
+
+    # deleting
+    delete_task_by_id(real_index)
+
+    print(Fore.WHITE + Back.RED + Style.BRIGHT + f"id {index} has been deleted.")
 
 
-def update_task():
-    pass
+def update_task(index, new_title):
+    """Function Update Task by index with new_text"""
+
+    # real index
+    real_index = int(index) - 1
+
+    #
+    update_title_by_index(real_index, new_title)
+
+    #
+    print(
+        Fore.BLUE
+        + Back.WHITE
+        + Style.BRIGHT
+        + f"\ntask {index} has been updated with {new_title}\n"
+    )
 
 
 def list_task(tasks):
@@ -173,10 +241,10 @@ def list_task(tasks):
         return
 
     # loop inject tasks to task and finaly inject to table(rows)
-    for task in tasks:
+    for index, task in enumerate(tasks, start=1):
         table.append(
             [
-                task["id"],
+                index,
                 task["title"],
                 task["status"],
                 task["created_at"],
@@ -194,6 +262,7 @@ def list_task(tasks):
 
 
 def clear_list(filename=FILENAME):
+    # Just Clear Terminal
     os.system("clear")
 
     # claering
